@@ -13,6 +13,8 @@ namespace Product.Core
     {
         public static IServiceCollection AddCore(this IServiceCollection services)
         {
+            services.AddScoped<IBrandService, BrandService>();
+            services.AddScoped<ICategoryService, CategoryService>();
             services.AddScoped<IPictureService, PictureService>();
             services.AddScoped<IProductService, ProductService>();
             return services;

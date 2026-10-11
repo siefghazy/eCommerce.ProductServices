@@ -19,7 +19,15 @@ namespace Product.Infrastructure.Repositories
 
         public async Task CreateProduct(Products product)
         {
-            await _dbContext.Products.AddAsync(product);
+            if (product.Images != null)
+            {
+                await _dbContext.Products.AddAsync(product);
+            }
+            else
+            {
+                await _dbContext.Products.AddAsync(product);
+                await _dbContext.SaveChangesAsync();
+            }
         }
 
         public async Task DeleteProduct(Guid id)

@@ -19,6 +19,8 @@ namespace Product.Infrastructure
             services.AddScoped<IProductRepo, ProductRepo>();
             services.AddScoped<IDatabaseTransaction, DatabaseTransaction>();
             services.AddScoped<IPicturesRepo, ImagesRepo>();
+            services.AddScoped<IBrandRepo, BrandRepo>();
+            services.AddScoped<ICategoryRepo, CategoryRepo>();
             return services;
         }
     }

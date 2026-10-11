@@ -33,22 +33,22 @@ namespace Product.Core.Services
             try
             {
                 List<Images> images = new List<Images>();
-                await _databaseTransaction.ExecuteAsync(async () =>
+                if (product.Pictures != null)
                 {
-
-                    if (product.Pictures != null)
+                    foreach (var picture in product.Pictures)
                     {
-                        foreach (var picture in product.Pictures)
+                        var path = GeneratePath(picture);
+                        images.Add(new Images
                         {
-                            var path = GeneratePath(picture);
-                            images.Add(new Images
-                            {
-                                Id = Guid.NewGuid(),
-                                Url = path,
-                                CreatedAt = DateTime.UtcNow,
-                                IsDeleted = false
-                            });
-                        }
+                            Id = Guid.NewGuid(),
+                            Url = path,
+                            CreatedAt = DateTime.UtcNow,
+                            IsDeleted = false
+                        });
+                    }
+                    await _databaseTransaction.ExecuteAsync(async () =>
+                    {
+
                         Products newProduct = new Products
                         {
                             Id = Guid.NewGuid(),
@@ -62,32 +62,30 @@ namespace Product.Core.Services
                             CreatedAt = DateTime.UtcNow
                         };
                         await _productRepo.CreateProduct(newProduct);
-                    }
-                    else
-                    {
-                        Products newProduct = new Products
-                        {
-                            Id = Guid.NewGuid(),
-                            Name = product.Name,
-                            Description = product.Description,
-                            Price = product.Price,
-                            CategoryId = product.CategoryId,
-                            BrandId = product.brandId,
-                            Quantity = product.Quantity,
-                            CreatedAt = DateTime.UtcNow
-                        };
-                        await _productRepo.CreateProduct(newProduct);
-                    }
-                });
-                if(images.Any())
-                {
-                   for(int i = 0; i < images.Count; i++)
+                    });
+                    for (int i = 0; i < images.Count; i++)
                     {
                         await using var stream = new FileStream(images[i].Url, FileMode.Create);
-                       var productPicture = product.Pictures.ElementAt(i);
+                        var productPicture = product.Pictures.ElementAt(i);
                         await productPicture.CopyToAsync(stream);
                     }
                 }
+                else
+                {
+                    Products newProduct = new Products
+                    {
+                        Id = Guid.NewGuid(),
+                        Name = product.Name,
+                        Description = product.Description,
+                        Price = product.Price,
+                        CategoryId = product.CategoryId,
+                        BrandId = product.brandId,
+                        Quantity = product.Quantity,
+                        CreatedAt = DateTime.UtcNow
+                    };
+                    await _productRepo.CreateProduct(newProduct);
+                }
+
             }
             catch (Exception ex)
             {

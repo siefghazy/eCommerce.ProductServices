@@ -18,8 +18,15 @@ namespace Product.Infrastructure.Repositories
         }
         public async Task CreateBrand(Brands brand)
         {
-            await _context.Brands.AddAsync(brand);
-           
+            if (brand.Image != null)
+            {
+                await _context.Brands.AddAsync(brand);
+            }
+            else
+            {
+                await _context.Brands.AddAsync(brand);
+                await _context.SaveChangesAsync();
+            }
         }
 
         public async Task DeleteBrand(Guid id)

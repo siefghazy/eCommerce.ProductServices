@@ -18,7 +18,17 @@ namespace Product.Infrastructure.Repositories
         }
         public async Task CreateCategory(Category category)
         {
-           await _context.Categories.AddAsync(category);
+            if (category.Image != null)
+            {
+                await _context.Categories.AddAsync(category);
+            }
+            else
+            {
+                await _context.Categories.AddAsync(category);
+                await _context.SaveChangesAsync();
+            }
+
+
         }
 
         public async Task DeleteCategory(Guid id)
