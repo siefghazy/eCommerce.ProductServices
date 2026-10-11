@@ -10,7 +10,7 @@ namespace Product.Core.Dtos
     {
         public Guid? Id { get; set; }
         public string Path { get; set; }
-        public Guid? productId {get; set; }
+        
 
     }
 }

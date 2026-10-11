@@ -7,6 +7,7 @@ using Product.Domain.Entities;
 using Product.Domain.Interfaces;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
@@ -47,8 +48,6 @@ namespace Product.Core.Services
                                 CreatedAt = DateTime.UtcNow,
                                 IsDeleted = false
                             });
-                            await using var stream = new FileStream(path, FileMode.Create);
-                            await picture.CopyToAsync(stream);
                         }
                         Products newProduct = new Products
                         {
@@ -79,9 +78,16 @@ namespace Product.Core.Services
                         };
                         await _productRepo.CreateProduct(newProduct);
                     }
-
-
                 });
+                if(images.Any())
+                {
+                   for(int i = 0; i < images.Count; i++)
+                    {
+                        await using var stream = new FileStream(images[i].Url, FileMode.Create);
+                       var productPicture = product.Pictures.ElementAt(i);
+                        await productPicture.CopyToAsync(stream);
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -109,8 +115,6 @@ namespace Product.Core.Services
                     {
                         Id = i.Id,
                         Path = i.Url
-                       
-
                     }).ToList()
                 }).FirstOrDefaultAsync();
 
@@ -239,7 +243,7 @@ namespace Product.Core.Services
                         foreach (var picture in product.Pictures)
                         {
                             var path = GeneratePath(picture);
-                            await _pictureService.CreatePicture(new PicturesDto { Path = path, productId = productToUpdate.Id });
+                            await _pictureService.CreatePicture(new PicturesDto { Id=Guid.NewGuid(),Path = path,  });
                             await using var stream = new FileStream(path, FileMode.Create);
                             await picture.CopyToAsync(stream);
                         }

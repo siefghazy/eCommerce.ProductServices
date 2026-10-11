@@ -20,7 +20,7 @@ namespace Product.Domain.Entities
         public Guid BrandId { get; set; }
         public Brands Brand { get; set; } 
 
-        public ICollection<Images> Images { get; set; }
+        public ICollection<Images>? Images { get; set; }
             = new List<Images>();
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

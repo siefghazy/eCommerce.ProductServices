@@ -11,7 +11,7 @@ namespace Product.Domain.Interfaces
     {
         public IQueryable<Category> ListCategories();
         public Task<Category> GetCategoryById(Guid id);
-        public Task<Category> CreateCategory(Category category);
+        public Task CreateCategory(Category category);
         public Task UpdateCategory(Category category);
         public Task DeleteCategory(Guid id);
     }

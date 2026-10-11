@@ -11,7 +11,7 @@ namespace Product.Domain.Interfaces
     {
         public IQueryable<Brands> ListBrands();
         public Task<Brands> GetBrandById(Guid id);
-        public Task<Brands> CreateBrand(Brands brand);
+        public Task CreateBrand(Brands brand);
         public Task UpdateBrand(Brands brand);
         public Task DeleteBrand(Guid id);
     }
