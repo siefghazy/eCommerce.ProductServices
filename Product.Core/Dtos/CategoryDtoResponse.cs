@@ -12,6 +12,7 @@ namespace Product.Core.Dtos
         public string Name { get; set; }
         public string Description { get; set; }
         public string? PictureUrl { get; set; }
+        public ICollection<ProductDtoResponse> Products { get; set; } = new List<ProductDtoResponse>();
 
     }
 }

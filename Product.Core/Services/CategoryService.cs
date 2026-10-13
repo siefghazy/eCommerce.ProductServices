@@ -73,7 +73,21 @@ namespace Product.Core.Services
                 Id = c.Id,
                 Name = c.Name,
                 Description = c.Description,
-                PictureUrl = c.Image != null ? c.Image.Url : null
+                PictureUrl = c.Image != null ? c.Image.Url : null,
+                Products = c.Products.Select(p => new ProductDtoResponse
+                {
+                    Id = p.Id,
+                    Name = p.Name,
+                    Description = p.Description,
+                    Price = p.Price,
+                    Pictures = p.Images != null ? p.Images.Select(i=>new PicturesDto
+                    {
+                        Id = i.Id,
+                        Path = i.Url
+                    }).ToList() : null
+                }).ToList()
+
+
             }).ToListAsync();
             return categories;
         }

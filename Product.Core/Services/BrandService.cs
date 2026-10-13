@@ -27,6 +27,7 @@ namespace Product.Core.Services
         {
             try
             {
+                
                 Brands Brand = new Brands
                 {
                     Id = Guid.NewGuid(),
@@ -37,9 +38,10 @@ namespace Product.Core.Services
                 };
                 if (brand.LogoUrl != null)
                 {
-                    _transaction.ExecuteAsync(async () =>
+                    var path = GeneratePath(brand.LogoUrl);
+                    await _transaction.ExecuteAsync(async () =>
                     {
-                        var path = GeneratePath(brand.LogoUrl);
+                   
                         Brand.Image = new Images
                         {
                             Id = Guid.NewGuid(),
@@ -49,7 +51,7 @@ namespace Product.Core.Services
                         };
                         await _brandRepository.CreateBrand(Brand);
                     });
-                    using (var stream = new FileStream(Brand.Image.Url, FileMode.Create))
+                    using (var stream = new FileStream(path, FileMode.Create))
                     {
                         await brand.LogoUrl.CopyToAsync(stream);
                     }      
@@ -82,7 +84,23 @@ namespace Product.Core.Services
                 Id = b.Id,
                 Name = b.Name,
                 Description = b.Description,
-                LogoUrl = b.Image != null ? b.Image.Url : null
+                LogoUrl = b.Image != null ? b.Image.Url : null,
+                Products = b.Products.Select(p => new ProductDtoResponse
+                {
+                    Id = p.Id,
+                    Name = p.Name,
+                    Description = p.Description,
+                    Price = p.Price,
+                    Quantity = p.Quantity,
+                    CategoryId = p.CategoryId,
+                    BrandId = p.BrandId,
+                    Pictures = p.Images != null ? p.Images.Select(pic => new PicturesDto
+                    {
+                        Id = pic.Id,
+                        Path = pic.Url
+                    }).ToList() : null
+                }).ToList()
+
             }).ToListAsync();
             return brands;
         }

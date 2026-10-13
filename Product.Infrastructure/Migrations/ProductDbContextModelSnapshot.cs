@@ -200,7 +200,7 @@ namespace Product.Infrastructure.Migrations
                         .IsRequired();
 
                     b.HasOne("Product.Domain.Entities.Category", "Category")
-                        .WithMany("Products")
+                        .WithMany()
                         .HasForeignKey("CategoryId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -211,11 +211,6 @@ namespace Product.Infrastructure.Migrations
                 });
 
             modelBuilder.Entity("Product.Domain.Entities.Brands", b =>
-                {
-                    b.Navigation("Products");
-                });
-
-            modelBuilder.Entity("Product.Domain.Entities.Category", b =>
                 {
                     b.Navigation("Products");
                 });
