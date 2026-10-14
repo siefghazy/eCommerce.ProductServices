@@ -17,17 +17,20 @@ namespace Product.Infrastructure
         public async Task ExecuteAsync(Func<Task> action)
         {
             await using var transaction = await _dbContext.Database.BeginTransactionAsync();
-            try
             {
-                await action();
-                await _dbContext.SaveChangesAsync();
-                await transaction.CommitAsync();
+                try
+                {
+                    await action();
+                    await _dbContext.SaveChangesAsync();
+                    await transaction.CommitAsync();
+                }
+                catch
+                {
+                    await transaction.RollbackAsync();
+                    throw;
+                }
             }
-            catch
-            {
-                await transaction.RollbackAsync();
-                throw;
-            }
+
         }
     }
 }
