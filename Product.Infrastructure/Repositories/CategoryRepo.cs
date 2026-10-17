@@ -33,8 +33,19 @@ namespace Product.Infrastructure.Repositories
 
         public async Task DeleteCategory(Guid id)
         {
-            var category = await _context.Categories.FirstOrDefaultAsync(c => c.Id == id);
-            category.IsDeleted = true;
+            var category = await _context.Categories.Include(c => c.Image).FirstOrDefaultAsync(c => c.Id == id && !c.IsDeleted);
+            if (category.Image != null)
+            {
+                category.IsDeleted = true;
+                await UpdateCategory(category);
+            }
+
+            else
+            {
+                category.IsDeleted = true;
+                await UpdateCategory(category);
+                await _context.SaveChangesAsync();
+            }
         }
 
         public async Task<Category> GetCategoryById(Guid id)
@@ -52,6 +63,7 @@ namespace Product.Infrastructure.Repositories
         public async Task UpdateCategory(Category category)
         {
             _context.Categories.Update(category);
+           
         }
     }
 }

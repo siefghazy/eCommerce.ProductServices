@@ -98,9 +98,7 @@ namespace Product.Core.Services
         {
             try
             {
-
-               
-                var product = await _productRepo.ListProducts().Where(p => p.Id == id && p.isDeleted == false).Select(p => new ProductDtoResponse
+                var product = await _productRepo.ListProducts().Where(p => p.Id == id && p.isDeleted == false).Select(p => new Products
                 {
                     Id = p.Id,
                     Description = p.Description,
@@ -109,43 +107,42 @@ namespace Product.Core.Services
                     BrandId = p.BrandId,
                     Quantity = p.Quantity,
                     Name = p.Name,
-                    Pictures = p.Images.Where(i => i.IsDeleted == false).Select(i => new PicturesDto
+                    Images = p.Images.Where(i => i.IsDeleted == false).Select(i => new Images
                     {
                         Id = i.Id,
-                        Path = i.Url
+                        Url = i.Url,
+                        IsDeleted = i.IsDeleted
                     }).ToList()
                 }).FirstOrDefaultAsync();
 
-                if (product.Pictures.Any())
+                if (product.Images != null )
                 {
+                    foreach (var image in product.Images)
+                    {
+                        image.IsDeleted = true;
+                    }
                     await _databaseTransaction.ExecuteAsync(async () =>
                     {
-
-                        await _productRepo.DeleteProduct(product.Id);
-                        foreach (var image in product.Pictures)
-                        {
-                            await _pictureService.DeletePicture(image.Id.Value);
-                            File.Delete(image.Path);
-                        }
-
-                        var chacedProduct = await _Cache.GetStringAsync($"product:{product.Id}");
-                        if (chacedProduct != null)
-                        { 
-                            await _Cache.RemoveAsync($"product:{product.Id}");
-                        }
+                        await _productRepo.DeleteProduct(product);
                     });
+                    foreach (var image in product.Images.Where(i => i.IsDeleted == true))
+                    {
+                        File.Delete(image.Url);
+                    }
+                    var chacedProduct = await _Cache.GetStringAsync($"product:{product.Id}");
+                    if (chacedProduct != null)
+                    {
+                        await _Cache.RemoveAsync($"product:{product.Id}");
+                    }
                 }
                 else
                 {
-                    await _databaseTransaction.ExecuteAsync(async () =>
-                    {
-                        await _productRepo.DeleteProduct(id);
+                        await _productRepo.DeleteProduct(product);
                         var chacedProduct = await _Cache.GetStringAsync($"product:{product.Id}");
                         if (chacedProduct != null)
                         {
                             await _Cache.RemoveAsync($"product:{product.Id}");
                         }
-                    });
                 }
             }
             catch (Exception ex)
@@ -211,64 +208,69 @@ namespace Product.Core.Services
         {
             try
             {
-                var productToUpdate = await _productRepo.ListProducts().Where(p => p.Id == id && p.isDeleted == false).Select(x => new Products
-                {
-                    Id = x.Id,
-                    Name = x.Name,
-                    Description = x.Description,
-                    Price = x.Price,
-                    Quantity = x.Quantity,
-                    CategoryId = x.CategoryId,
-                    BrandId = x.BrandId,
-                    CreatedAt = x.CreatedAt,
-                    UpdatedAt = x.UpdatedAt,
-                    isDeleted = x.isDeleted,
-                    Images = x.Images.Where(i => i.IsDeleted == false).ToList()
-                }).FirstOrDefaultAsync();
-                await _databaseTransaction.ExecuteAsync(async () =>
-                {
-                    if (product.Pictures.Any())
-                    {
+                var productToUpdate = _productRepo.ListProducts().Include(p => p.Images).FirstOrDefault(p => p.Id == id && p.isDeleted == false);
 
-                        productToUpdate.Name = product.Name;
-                        productToUpdate.Description = product.Description;
-                        productToUpdate.Price = product.Price;
-                        productToUpdate.Quantity = product.Quantity;
-                        productToUpdate.UpdatedAt = DateTime.UtcNow;
-                        productToUpdate.CategoryId = product.CategoryId;
-                        productToUpdate.BrandId = product.brandId;
-                        _productRepo.UpdateProduct(productToUpdate);
+                productToUpdate.Name = product.Name;
+                productToUpdate.Description = product.Description;
+                productToUpdate.Price = product.Price;
+                productToUpdate.Quantity = product.Quantity;
+                productToUpdate.CategoryId = product.CategoryId;
+                productToUpdate.BrandId = product.brandId;
+                if (product.Pictures != null)
+                {
+                    List<Images> images = new List<Images>();
+                    if (productToUpdate.Images == null)
+                    {
                         foreach (var picture in product.Pictures)
                         {
                             var path = GeneratePath(picture);
-                            await _pictureService.CreatePicture(new PicturesDto { Id=Guid.NewGuid(),Path = path,  });
-                            await using var stream = new FileStream(path, FileMode.Create);
-                            await picture.CopyToAsync(stream);
+                            productToUpdate.Images.Add(new Images
+                            {
+                                Id = Guid.NewGuid(),
+                                Url = path,
+                                CreatedAt = DateTime.UtcNow,
+                                IsDeleted = false
+                            });
+
                         }
-                        foreach (var image in productToUpdate.Images)
+                        await _databaseTransaction.ExecuteAsync(async () =>
                         {
-                            await _pictureService.DeletePicture(image.Id);
-                            File.Delete(image.Url);
-                        }
+                            await _productRepo.UpdateProduct(productToUpdate);
+                        });
                     }
                     else
                     {
+                        foreach (var picture in productToUpdate.Images)
+                        {
+                            picture.IsDeleted = true;
+                            images.Add(picture);
+                        }
+                        foreach (var picture in product.Pictures)
+                        {
+                            var path = GeneratePath(picture);
+                            images.Add(new Images
+                            {
+                                Id = Guid.NewGuid(),
+                                Url = path,
+                                CreatedAt = DateTime.UtcNow,
+                                IsDeleted = false
+                            });
+                        }
+                        productToUpdate.Images = images;
                         await _databaseTransaction.ExecuteAsync(async () =>
                         {
-                            productToUpdate.Name = product.Name;
-                            productToUpdate.Description = product.Description;
-                            productToUpdate.Price = product.Price;
-                            productToUpdate.Quantity = product.Quantity;
-                            productToUpdate.UpdatedAt = DateTime.UtcNow;
-                            productToUpdate.CategoryId = product.CategoryId;
-                            productToUpdate.BrandId = product.brandId;
-                            productToUpdate.UpdatedAt = DateTime.UtcNow;
-                            _productRepo.UpdateProduct(productToUpdate);
+                            await _productRepo.UpdateProduct(productToUpdate);
                         });
+                        foreach (var img in images.Where(i => i.IsDeleted == true))
+                        {
+                            File.Delete(img.Url);
+                        }
                     }
-
-                });
-
+                }
+                else
+                {
+                    await _productRepo.UpdateProduct(productToUpdate);
+                }
             }
 
             catch (Exception ex)

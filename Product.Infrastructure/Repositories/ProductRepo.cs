@@ -30,10 +30,20 @@ namespace Product.Infrastructure.Repositories
             }
         }
 
-        public async Task DeleteProduct(Guid id)
+        public async Task DeleteProduct(Products product)
         {
-            var product = await _dbContext.Products.FirstOrDefaultAsync(p => p.Id == id && p.isDeleted == false);
-            product.isDeleted = true;
+            if (product.Images != null)
+            {
+                product.isDeleted = true;
+                await UpdateProduct(product);
+            }
+            else
+            {
+                product.isDeleted = true;
+                await UpdateProduct(product);
+                await _dbContext.SaveChangesAsync();
+            }
+
         }
 
         public async Task<Products> GetProductById(Guid id)
@@ -50,8 +60,15 @@ namespace Product.Infrastructure.Repositories
 
         public async Task UpdateProduct(Products product)
         {
-           
-            _dbContext.Products.Update(product);  
+            if (product.Images != null)
+            {
+                _dbContext.Products.Update(product);
+            }
+            else
+            {
+                _dbContext.Products.Update(product);
+                await _dbContext.SaveChangesAsync();
+            } 
         }
         
     }

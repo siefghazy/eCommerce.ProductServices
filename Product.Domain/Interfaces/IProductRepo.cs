@@ -13,6 +13,6 @@ namespace Product.Domain.Interfaces
         public Task<Products> GetProductById(Guid id);
         public Task CreateProduct(Products product);
         public Task UpdateProduct(Products product);
-        public Task DeleteProduct(Guid id);
+        public Task DeleteProduct(Products product);
     }
 }
