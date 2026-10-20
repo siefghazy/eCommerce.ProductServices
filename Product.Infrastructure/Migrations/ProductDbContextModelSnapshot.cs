@@ -54,7 +54,7 @@ namespace Product.Infrastructure.Migrations
                         .IsUnique()
                         .HasFilter("[ImageId] IS NOT NULL");
 
-                    b.ToTable("Brands");
+                    b.ToTable("Brands", (string)null);
                 });
 
             modelBuilder.Entity("Product.Domain.Entities.Category", b =>
@@ -89,7 +89,7 @@ namespace Product.Infrastructure.Migrations
                         .IsUnique()
                         .HasFilter("[ImageId] IS NOT NULL");
 
-                    b.ToTable("Categories");
+                    b.ToTable("Categories", (string)null);
                 });
 
             modelBuilder.Entity("Product.Domain.Entities.Images", b =>
@@ -118,7 +118,7 @@ namespace Product.Infrastructure.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("Images");
+                    b.ToTable("Images", (string)null);
                 });
 
             modelBuilder.Entity("Product.Domain.Entities.Products", b =>
@@ -161,7 +161,7 @@ namespace Product.Infrastructure.Migrations
 
                     b.HasIndex("CategoryId");
 
-                    b.ToTable("Products");
+                    b.ToTable("Products", (string)null);
                 });
 
             modelBuilder.Entity("Product.Domain.Entities.Brands", b =>
