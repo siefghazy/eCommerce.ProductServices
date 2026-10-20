@@ -46,7 +46,7 @@ namespace eCommerce.ProductServices.Controllers
             await _productService.UpdateProduct(id, productDto);
             return Ok(new { message = "Product updated successfully." });
         }
-        [Authorize(Roles ="Admin")]
+
         [HttpDelete("DeleteProduct/{id}")]
         public async Task<IActionResult> DeleteProduct([FromRoute] Guid id)
         {
