@@ -85,7 +85,7 @@ namespace Product.Core.Services
                 Name = b.Name,
                 Description = b.Description,
                 LogoUrl = b.Image != null ? b.Image.Url : null,
-                Products = b.Products.Select(p => new ProductDtoResponse
+                Products = b.Products.Where(x=>x.isDeleted==false).Select(p => new ProductDtoResponse
                 {
                     Id = p.Id,
                     Name = p.Name,
