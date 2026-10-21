@@ -63,6 +63,7 @@ namespace Product.Infrastructure.Repositories
             if (product.Images != null)
             {
                 _dbContext.Products.Update(product);
+              
             }
             else
             {

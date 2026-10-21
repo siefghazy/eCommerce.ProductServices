@@ -1,4 +1,5 @@
-﻿using Product.Domain.Interfaces;
+﻿using Microsoft.EntityFrameworkCore;
+using Product.Domain.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,6 +24,19 @@ namespace Product.Infrastructure
                     await action();
                     await _dbContext.SaveChangesAsync();
                     await transaction.CommitAsync();
+                }
+                catch (DbUpdateConcurrencyException ex)
+                {
+                    foreach (var entry in ex.Entries)
+                    {
+                        Console.WriteLine(
+                            $"Entity: {entry.Metadata.ClrType.Name}");
+                        Console.WriteLine(
+                            $"State: {entry.State}");
+                    }
+
+                    await transaction.RollbackAsync();
+                    throw;
                 }
                 catch
                 {

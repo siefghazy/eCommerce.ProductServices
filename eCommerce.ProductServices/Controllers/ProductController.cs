@@ -39,7 +39,7 @@ namespace eCommerce.ProductServices.Controllers
             }
 
         }
-        [Authorize(Roles ="Admin")]
+  
         [HttpPut("UpdateProduct/{id}")]
         public async Task<IActionResult> UpdateProduct([FromRoute] Guid id, [FromForm] ProductDto productDto)
         {

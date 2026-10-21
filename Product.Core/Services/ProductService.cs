@@ -48,7 +48,6 @@ namespace Product.Core.Services
                     }
                     await _databaseTransaction.ExecuteAsync(async () =>
                     {
-
                         Products newProduct = new Products
                         {
                             Id = Guid.NewGuid(),
@@ -125,7 +124,7 @@ namespace Product.Core.Services
                     {
                         await _productRepo.DeleteProduct(product);
                     });
-                    foreach (var image in product.Images.Where(i => i.IsDeleted == true))
+                    foreach (var image in product.Images)
                     {
                         File.Delete(image.Url);
                     }
@@ -208,7 +207,7 @@ namespace Product.Core.Services
         {
             try
             {
-                var productToUpdate = _productRepo.ListProducts().Include(p => p.Images).FirstOrDefault(p => p.Id == id && p.isDeleted == false);
+                var productToUpdate = await _productRepo.ListProducts().Include(p => p.Images).FirstOrDefaultAsync(p => p.Id == id && p.isDeleted == false);
 
                 productToUpdate.Name = product.Name;
                 productToUpdate.Description = product.Description;
@@ -218,7 +217,6 @@ namespace Product.Core.Services
                 productToUpdate.BrandId = product.brandId;
                 if (product.Pictures != null)
                 {
-                    List<Images> images = new List<Images>();
                     if (productToUpdate.Images == null)
                     {
                         foreach (var picture in product.Pictures)
@@ -227,6 +225,8 @@ namespace Product.Core.Services
                             productToUpdate.Images.Add(new Images
                             {
                                 Id = Guid.NewGuid(),
+                                Product=productToUpdate,
+                                ProductId=productToUpdate.Id,
                                 Url = path,
                                 CreatedAt = DateTime.UtcNow,
                                 IsDeleted = false
@@ -242,26 +242,25 @@ namespace Product.Core.Services
                     {
                         foreach (var picture in productToUpdate.Images)
                         {
-                            picture.IsDeleted = true;
-                            images.Add(picture);
+                            productToUpdate.Images.Remove(picture);
                         }
                         foreach (var picture in product.Pictures)
                         {
                             var path = GeneratePath(picture);
-                            images.Add(new Images
+                            productToUpdate.Images.Add(new Images
                             {
-                                Id = Guid.NewGuid(),
+                                ProductId=productToUpdate.Id,
+                                Product=productToUpdate,
                                 Url = path,
                                 CreatedAt = DateTime.UtcNow,
                                 IsDeleted = false
                             });
                         }
-                        productToUpdate.Images = images;
                         await _databaseTransaction.ExecuteAsync(async () =>
                         {
                             await _productRepo.UpdateProduct(productToUpdate);
                         });
-                        foreach (var img in images.Where(i => i.IsDeleted == true))
+                        foreach (var img in productToUpdate.Images.Where(i => i.IsDeleted == true))
                         {
                             File.Delete(img.Url);
                         }
