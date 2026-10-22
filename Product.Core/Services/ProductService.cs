@@ -20,13 +20,15 @@ namespace Product.Core.Services
         private readonly IDistributedCache _Cache;
         private readonly IProductRepo _productRepo;
         private readonly IPictureService _pictureService;
+        private readonly IPicturesRepo _picturesRepo;   
         private readonly IDatabaseTransaction _databaseTransaction;
-        public ProductService(IProductRepo productRepo, IPictureService pictureService, IDatabaseTransaction databaseTransaction, IDistributedCache cache)
+        public ProductService(IProductRepo productRepo, IPictureService pictureService, IDatabaseTransaction databaseTransaction, IDistributedCache cache, IPicturesRepo picturesRepo)
         {
             _productRepo = productRepo;
             _pictureService = pictureService;
             _databaseTransaction = databaseTransaction;
             _Cache = cache;
+            _picturesRepo = picturesRepo;
         }
         public async Task CreateProduct(ProductDto product)
         {
@@ -217,12 +219,13 @@ namespace Product.Core.Services
                 productToUpdate.BrandId = product.brandId;
                 if (product.Pictures != null)
                 {
+                    List<Images> newImages = new List<Images>();
                     if (productToUpdate.Images == null)
                     {
                         foreach (var picture in product.Pictures)
                         {
                             var path = GeneratePath(picture);
-                            productToUpdate.Images.Add(new Images
+                            newImages.Add(new Images
                             {
                                 Id = Guid.NewGuid(),
                                 Product=productToUpdate,
@@ -236,19 +239,21 @@ namespace Product.Core.Services
                         await _databaseTransaction.ExecuteAsync(async () =>
                         {
                             await _productRepo.UpdateProduct(productToUpdate);
+                            await _picturesRepo.AddImageRange(newImages);
                         });
                     }
                     else
                     {
-                        foreach (var picture in productToUpdate.Images)
+                        foreach (var picture in productToUpdate.Images.Where(x=>x.IsDeleted==false))
                         {
-                            productToUpdate.Images.Remove(picture);
+                            picture.IsDeleted = true;
                         }
                         foreach (var picture in product.Pictures)
                         {
                             var path = GeneratePath(picture);
-                            productToUpdate.Images.Add(new Images
+                            newImages.Add(new Images
                             {
+                                Id = Guid.NewGuid(),
                                 ProductId=productToUpdate.Id,
                                 Product=productToUpdate,
                                 Url = path,
@@ -259,16 +264,29 @@ namespace Product.Core.Services
                         await _databaseTransaction.ExecuteAsync(async () =>
                         {
                             await _productRepo.UpdateProduct(productToUpdate);
+                            await _picturesRepo.AddImageRange(newImages);
                         });
                         foreach (var img in productToUpdate.Images.Where(i => i.IsDeleted == true))
                         {
                             File.Delete(img.Url);
                         }
+                        foreach (var img in newImages)
+                        {
+                            await using var stream = new FileStream(img.Url, FileMode.Create);
+                            var productPicture = product.Pictures.FirstOrDefault(p => p.FileName == Path.GetFileName(img.Url));
+                            if (productPicture != null)
+                            {
+                                await productPicture.CopyToAsync(stream);
+                            }
+                        }
                     }
                 }
                 else
                 {
-                    await _productRepo.UpdateProduct(productToUpdate);
+                    await _databaseTransaction.ExecuteAsync(async () =>
+                    {
+                        await _productRepo.UpdateProduct(productToUpdate);
+                    });
                 }
             }
 

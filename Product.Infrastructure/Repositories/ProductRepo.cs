@@ -58,18 +58,18 @@ namespace Product.Infrastructure.Repositories
             return _dbContext.Products;
         }
 
-        public async Task UpdateProduct(Products product)
+        public  async Task UpdateProduct(Products product)
         {
             if (product.Images != null)
             {
                 _dbContext.Products.Update(product);
-              
+               
             }
             else
             {
                 _dbContext.Products.Update(product);
                 await _dbContext.SaveChangesAsync();
-            } 
+            }
         }
         
     }

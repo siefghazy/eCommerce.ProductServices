@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Product.Domain.Entities;
 using Product.Domain.Interfaces;
 using System;
 using System.Collections.Generic;
@@ -22,6 +23,14 @@ namespace Product.Infrastructure
                 try
                 {
                     await action();
+                    foreach (var entry in _dbContext.ChangeTracker.Entries<Images>())
+                    {
+                        Console.WriteLine(
+                            $"Id: {entry.Entity.Id}, " +
+                            $"State: {entry.State}, " +
+                            $"IsDeleted: {entry.Entity.IsDeleted}");
+                    }
+
                     await _dbContext.SaveChangesAsync();
                     await transaction.CommitAsync();
                 }

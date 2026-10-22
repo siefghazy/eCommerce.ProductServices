@@ -14,5 +14,6 @@ namespace Product.Domain.Interfaces
         public Task CreatePicture(Images picture);
         public Task UpdatePicture(Images picture);
         public Task DeletePicture(Guid id);
+        public Task AddImageRange(List<Images> imgs);
     }
 }

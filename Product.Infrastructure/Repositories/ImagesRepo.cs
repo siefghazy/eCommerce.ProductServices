@@ -47,5 +47,10 @@ namespace Product.Infrastructure.Repositories
             _context.Images.Update(picture);
             
         }
+
+        public async Task AddImageRange(List<Images> imgs)
+        {
+            await _context.Images.AddRangeAsync(imgs);
+        }
     }
 }

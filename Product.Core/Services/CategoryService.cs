@@ -80,7 +80,7 @@ namespace Product.Core.Services
                     Name = p.Name,
                     Description = p.Description,
                     Price = p.Price,
-                    Pictures = p.Images != null ? p.Images.Select(i=>new PicturesDto
+                    Pictures = p.Images != null ? p.Images.Where(p=>p.IsDeleted==false).Select(i=>new PicturesDto
                     {
                         Id = i.Id,
                         Path = i.Url
