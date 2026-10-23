@@ -12,7 +12,7 @@ namespace Product.Core.Interfaces
         public Task<List<BrandDtoResponse>> ListBrands();
         public Task<BrandDtoResponse> GetBrandById(Guid id);
         public Task CreateBrand(BrandDto brand);
-        public Task UpdateBrand(BrandDto brand);
+        public Task UpdateBrand(Guid id,BrandDto brand);
         public Task DeleteBrand(Guid id);
     }
 }

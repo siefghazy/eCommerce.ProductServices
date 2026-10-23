@@ -24,7 +24,19 @@ namespace eCommerce.ProductServices.Controllers
         public async Task<IActionResult> CreateBrand([FromForm] BrandDto brand)
         {
             await _brandService.CreateBrand(brand);
-            return Ok(new {message="Brand created successfully"});
+            return Ok(new { message = "Brand created successfully" });
+        }
+        [HttpPut("UpdateBrand/{id}")]
+        public async Task<IActionResult> UpdateBrand(Guid id, [FromForm] BrandDto brand)
+        {
+            await _brandService.UpdateBrand(id, brand);
+            return Ok(new { message = "Brand updated successfully" });
+        }
+        [HttpDelete("DeleteBrand/{id}")]
+        public async Task<IActionResult> DeleteBrand(Guid id)
+        {
+            await _brandService.DeleteBrand(id);
+            return Ok(new { message = "Brand deleted successfully" });
         }
     }
 }

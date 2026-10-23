@@ -13,6 +13,6 @@ namespace Product.Domain.Interfaces
         public Task<Brands> GetBrandById(Guid id);
         public Task CreateBrand(Brands brand);
         public Task UpdateBrand(Brands brand);
-        public Task DeleteBrand(Guid id);
+        public Task DeleteBrand(Brands brands);
     }
 }

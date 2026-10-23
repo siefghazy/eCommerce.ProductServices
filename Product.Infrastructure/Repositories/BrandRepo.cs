@@ -29,9 +29,9 @@ namespace Product.Infrastructure.Repositories
             }
         }
 
-        public async Task DeleteBrand(Guid id)
+        public async Task DeleteBrand(Brands brand )
         {
-            var brand = await _context.Brands.FirstOrDefaultAsync(b => b.Id == id);
+            
             brand.IsDeleted = true;
         }   
         
@@ -48,8 +48,15 @@ namespace Product.Infrastructure.Repositories
 
         public async Task UpdateBrand(Brands brand)
         {
-            _context.Brands.Update(brand);
-            
+            if (brand.Image != null)
+            {
+                _context.Brands.Update(brand);
+            }
+            else
+            {
+                _context.Brands.Update(brand);
+                await _context.SaveChangesAsync();
+            }
         }
         }
     }
