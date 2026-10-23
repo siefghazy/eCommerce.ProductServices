@@ -13,6 +13,6 @@ namespace Product.Domain.Interfaces
         public Task<Category> GetCategoryById(Guid id);
         public Task CreateCategory(Category category);
         public Task UpdateCategory(Category category);
-        public Task DeleteCategory(Guid id);
+        public Task DeleteCategory(Category category);
     }
 }

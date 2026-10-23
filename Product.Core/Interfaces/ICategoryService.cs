@@ -12,7 +12,7 @@ namespace Product.Core.Interfaces
         public Task<List<CategoryDtoResponse>> ListCategories();
         public Task<CategoryDtoResponse> GetCategoryById(Guid id);
         public Task CreateCategory(CategoryDto category);
-        public Task UpdateCategory(CategoryDto category);
+        public Task UpdateCategory(Guid id,CategoryDto category);
         public Task DeleteCategory(Guid id);
     }
 }

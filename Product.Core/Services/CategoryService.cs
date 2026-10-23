@@ -15,11 +15,13 @@ namespace Product.Core.Services
     public class CategoryService : ICategoryService
     {
         private readonly ICategoryRepo _CategoryRepo;
+        private readonly IPicturesRepo _picturesRepo;
         private readonly IDatabaseTransaction _databaseTransaction;
-        public CategoryService(ICategoryRepo categoryRepo, IDatabaseTransaction databaseTransaction)
+        public CategoryService(ICategoryRepo categoryRepo, IDatabaseTransaction databaseTransaction,IPicturesRepo picturesRepo)
         {
             _CategoryRepo = categoryRepo;
             _databaseTransaction = databaseTransaction;
+            _picturesRepo = picturesRepo;
         }
         public async Task CreateCategory(CategoryDto category)
         {
@@ -56,14 +58,62 @@ namespace Product.Core.Services
             }
             }
 
-        public Task DeleteCategory(Guid id)
+        public async Task DeleteCategory(Guid id)
         {
-            throw new NotImplementedException();
-        }
+            try
+            {
+                var category = _CategoryRepo.ListCategories().Include(c => c.Image).Where(c => c.Image.IsDeleted == false).FirstOrDefault(c => c.Id == id && c.IsDeleted == false);
+                if (category.Image != null)
+                {
+                    category.Image.IsDeleted = true;
+                    await _databaseTransaction.ExecuteAsync(async () =>
+                    {
+                        await _CategoryRepo.DeleteCategory(category);
+                    });
+                    File.Delete(category.Image.Url);
+                }
+                else
+                {
+                    await _CategoryRepo.DeleteCategory(category);
+                }
 
-        public Task<CategoryDtoResponse> GetCategoryById(Guid id)
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"An error occurred while deleting the category with ID {id}: {ex.Message}", ex);
+            }
+            }
+
+        public async Task<CategoryDtoResponse> GetCategoryById(Guid id)
         {
-            throw new NotImplementedException();
+            try
+            {
+                var category = await _CategoryRepo.GetCategoryById(id);
+                CategoryDtoResponse cat = new CategoryDtoResponse
+                {
+                    Id = category.Id,
+                    Name = category.Name,
+                    Description = category.Description,
+                    PictureUrl = category.Image != null && category.Image.IsDeleted == false ? category.Image.Url : null,
+                    Products = category.Products.Select(p => new ProductDtoResponse
+                    {
+                        Id = p.Id,
+                        Name = p.Name,
+                        Description = p.Description,
+                        Price = p.Price,
+                        Pictures = p.Images != null ? p.Images.Where(p => p.IsDeleted == false).Select(i => new PicturesDto
+                        {
+                            Id = i.Id,
+                            Path = i.Url
+                        }).ToList() : null
+                    }).ToList()
+                };
+                return cat;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"An error occurred while retrieving the category with ID {id}: {ex.Message}", ex);
+            }
         }
 
         public async Task<List<CategoryDtoResponse>> ListCategories()
@@ -92,9 +142,43 @@ namespace Product.Core.Services
             return categories;
         }
 
-        public Task UpdateCategory(CategoryDto category)
+        public async Task UpdateCategory(Guid id, CategoryDto category)
         {
-            throw new NotImplementedException();
+            try
+            {
+                var categoryToUpdate = _CategoryRepo.ListCategories().Include(c => c.Image).Where(c => c.Image.IsDeleted == false).FirstOrDefault(c => c.Id == id && c.IsDeleted == false);
+                categoryToUpdate.Name = category.Name;
+                categoryToUpdate.Description = category.Description;
+                categoryToUpdate.UpdatedAt = DateTime.UtcNow;
+                if (category.Picture != null)
+                {
+                    if (categoryToUpdate.Image != null)
+                    {
+                        categoryToUpdate.Image.IsDeleted = true;
+                        var path = GeneratePath(category.Picture);
+                        var newImage = new Images()
+                        {
+                            Id = Guid.NewGuid(),
+                            Url = path,
+                            CreatedAt = DateTime.Now,
+                            IsDeleted = false
+                        };
+                        categoryToUpdate.ImageId = newImage.Id;
+                        await _databaseTransaction.ExecuteAsync(async () =>
+                        {
+                            await _picturesRepo.CreatePicture(newImage);
+                            await _CategoryRepo.UpdateCategory(categoryToUpdate);
+                        });
+
+
+
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"An error occurred while updating the category with ID {category.Id}: {ex.Message}", ex);
+            }
         }
         private string GeneratePath(IFormFile file)
         {
