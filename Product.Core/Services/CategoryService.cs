@@ -169,10 +169,38 @@ namespace Product.Core.Services
                             await _picturesRepo.CreatePicture(newImage);
                             await _CategoryRepo.UpdateCategory(categoryToUpdate);
                         });
-
-
+                        File.Delete(categoryToUpdate.Image.Url);
+                        using (var stream = new FileStream(path, FileMode.Create))
+                        {
+                            await category.Picture.CopyToAsync(stream);
+                        }
 
                     }
+                    else
+                    {
+                        var path = GeneratePath(category.Picture);
+                        var newImage = new Images()
+                        {
+                            Id = Guid.NewGuid(),
+                            Url = path,
+                            CreatedAt = DateTime.Now,
+                            IsDeleted = false
+                        };
+                        categoryToUpdate.ImageId = newImage.Id;
+                        await _databaseTransaction.ExecuteAsync(async () =>
+                        {
+                            await _picturesRepo.CreatePicture(newImage);
+                            await _CategoryRepo.UpdateCategory(categoryToUpdate);
+                        });
+                        using (var stream = new FileStream(path, FileMode.Create))
+                        {
+                            await category.Picture.CopyToAsync(stream);
+                        }
+                    }
+                }
+                else
+                {
+                    await _CategoryRepo.UpdateCategory(categoryToUpdate);
                 }
             }
             catch (Exception ex)
