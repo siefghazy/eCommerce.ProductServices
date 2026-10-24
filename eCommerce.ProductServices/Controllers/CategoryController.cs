@@ -24,7 +24,19 @@ namespace eCommerce.ProductServices.Controllers
         public async Task<IActionResult> CreateCategory([FromForm] CategoryDto category)
         {
             await _categoryService.CreateCategory(category);
-            return Ok(new {message="Category created successfully"});
-        }   
+            return Ok(new { message = "Category created successfully" });
+        }
+        [HttpPut("UpdateCategory/{id}")]
+        public async Task<IActionResult> UpdateCategory([FromRoute] Guid id, [FromForm] CategoryDto category)
+        {
+            await _categoryService.UpdateCategory(id, category);
+            return Ok(new { message = "Category updated successfully" });
+        }
+        [HttpDelete("DeleteCategory/{id}")]
+        public async Task<IActionResult> DeleteCategory([FromRoute] Guid id)
+        {
+            await _categoryService.DeleteCategory(id);
+            return Ok(new { message = "Category deleted successfully" });
+        }
     }
 }

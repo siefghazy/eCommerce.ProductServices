@@ -103,7 +103,7 @@ namespace Product.Core.Services
 
         public async Task<List<BrandDtoResponse>> ListBrands()
         {
-            var brands = await _brandRepository.ListBrands().Select(b => new BrandDtoResponse
+            var brands = await _brandRepository.ListBrands().Where(b=>b.IsDeleted==false).Select(b => new BrandDtoResponse
             {
                 Id = b.Id,
                 Name = b.Name,
