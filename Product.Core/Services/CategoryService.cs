@@ -130,6 +130,8 @@ namespace Product.Core.Services
                     Name = p.Name,
                     Description = p.Description,
                     Price = p.Price,
+                    CategoryId=p.CategoryId,
+                    BrandId=p.BrandId,
                     Pictures = p.Images != null ? p.Images.Where(p=>p.IsDeleted==false).Select(i=>new PicturesDto
                     {
                         Id = i.Id,

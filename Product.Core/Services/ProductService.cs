@@ -207,19 +207,20 @@ namespace Product.Core.Services
 
         public async Task UpdateProduct(Guid id, ProductDto product)
         {
+
             try
             {
                 var productToUpdate = await _productRepo.ListProducts().Include(p => p.Images).FirstOrDefaultAsync(p => p.Id == id && p.isDeleted == false);
-
                 productToUpdate.Name = product.Name;
                 productToUpdate.Description = product.Description;
                 productToUpdate.Price = product.Price;
                 productToUpdate.Quantity = product.Quantity;
                 productToUpdate.CategoryId = product.CategoryId;
                 productToUpdate.BrandId = product.brandId;
+                List<Images> newImages = new List<Images>();
                 if (product.Pictures != null)
                 {
-                    List<Images> newImages = new List<Images>();
+              
                     if (productToUpdate.Images == null)
                     {
                         foreach (var picture in product.Pictures)
@@ -228,8 +229,8 @@ namespace Product.Core.Services
                             newImages.Add(new Images
                             {
                                 Id = Guid.NewGuid(),
-                                Product=productToUpdate,
-                                ProductId=productToUpdate.Id,
+                                Product = productToUpdate,
+                                ProductId = productToUpdate.Id,
                                 Url = path,
                                 CreatedAt = DateTime.UtcNow,
                                 IsDeleted = false
@@ -244,7 +245,7 @@ namespace Product.Core.Services
                     }
                     else
                     {
-                        foreach (var picture in productToUpdate.Images.Where(x=>x.IsDeleted==false))
+                        foreach (var picture in productToUpdate.Images.Where(x => x.IsDeleted == false))
                         {
                             picture.IsDeleted = true;
                         }
@@ -254,8 +255,8 @@ namespace Product.Core.Services
                             newImages.Add(new Images
                             {
                                 Id = Guid.NewGuid(),
-                                ProductId=productToUpdate.Id,
-                                Product=productToUpdate,
+                                ProductId = productToUpdate.Id,
+                                Product = productToUpdate,
                                 Url = path,
                                 CreatedAt = DateTime.UtcNow,
                                 IsDeleted = false
@@ -288,6 +289,27 @@ namespace Product.Core.Services
                         await _productRepo.UpdateProduct(productToUpdate);
                     });
                 }
+                var productToCach = new ProductDtoResponse
+                {
+                    Id = productToUpdate.Id,
+                    Name = productToUpdate.Name,
+                    Description = productToUpdate.Description,
+                    Price = productToUpdate.Price,
+                    Quantity = productToUpdate.Quantity,
+                    CategoryId = productToUpdate.CategoryId,
+                    BrandId = productToUpdate.BrandId,
+                    Pictures = productToUpdate.Images.Where(i => i.IsDeleted == false).Select(i => new PicturesDto { Id = i.Id, Path = i.Url }).ToList()
+                };
+                var cachedProduct = await _Cache.GetStringAsync($"product:{productToUpdate.Id}");
+                if (cachedProduct != null)
+                {
+                    await _Cache.SetStringAsync($"product:{productToUpdate.Id}", System.Text.Json.JsonSerializer.Serialize(productToCach), new DistributedCacheEntryOptions
+                    {
+                        AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(10)
+                    });
+                    await _Cache.RemoveAsync($"products:search:{productToUpdate.Name}");
+                }
+
             }
 
             catch (Exception ex)
