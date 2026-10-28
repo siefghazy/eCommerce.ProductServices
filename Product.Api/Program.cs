@@ -2,10 +2,12 @@ using eCommerce.ProductServices.Middlewares;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Product.Core;
 using Product.Core.Dtos;
+using Product.Core.Services;
 using Product.Infrastructure;
 using System.Text;
 
@@ -15,6 +17,22 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddCore();
 builder.Services.AddInfrastructure();
 builder.Services.AddControllers();
+var ConnectionStringTemp = builder.Configuration.GetConnectionString("DefaultConnection");
+var SqlHost = Environment.GetEnvironmentVariable("SQL_HOST");
+var password = Environment.GetEnvironmentVariable("PASSWORD");
+string ConnectionString = "";
+if (password == null)
+{
+     ConnectionString = ConnectionStringTemp.Replace("$SQL_HOST", SqlHost);
+}
+else
+{
+    var connectionString ="Server=sqlserver,1433;Database=Product_Services;User Id=sa;Password=YOUR_PASSWORD;TrustServerCertificate=True;";
+}
+builder.Services.AddDbContext<ProductDbContext>(options =>
+{
+    options.UseSqlServer(ConnectionString);
+});
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>

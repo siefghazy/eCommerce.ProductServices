@@ -11,11 +11,7 @@ namespace Product.Infrastructure
     {
         public static IServiceCollection AddInfrastructure(this IServiceCollection services)
         {
-            var config=services.BuildServiceProvider().GetRequiredService<IConfiguration>();
-            services.AddDbContext<ProductDbContext>(options =>
-            {
-                options.UseSqlServer(config.GetConnectionString("DefaultConnection"));
-            });
+           
             services.AddScoped<IProductRepo, ProductRepo>();
             services.AddScoped<IDatabaseTransaction, DatabaseTransaction>();
             services.AddScoped<IPicturesRepo, ImagesRepo>();

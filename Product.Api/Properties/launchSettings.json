@@ -5,7 +5,8 @@
       "launchBrowser": true,
       "launchUrl": "swagger",
       "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "SQL_HOST": "WIN-JKQLDIQ02OA\\SQLEXPRESS"
       },
       "dotnetRunMessages": true,
       "applicationUrl": "http://localhost:5233"
