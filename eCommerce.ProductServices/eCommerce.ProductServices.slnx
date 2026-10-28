@@ -1,6 +1,0 @@
-<Solution>
-  <Project Path="../Product.Core/Product.Core.csproj" />
-  <Project Path="../Product.Domain/Product.Domain.csproj" />
-  <Project Path="../Product.Infrastructure/Product.Infrastructure.csproj" />
-  <Project Path="eCommerce.ProductServices.csproj" />
-</Solution>
