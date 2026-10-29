@@ -1,18 +1,19 @@
-﻿using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Logging;
 using System.Threading.Tasks;
 
 namespace eCommerce.ProductServices.Middlewares
 {
-    // You may need to install the Microsoft.AspNetCore.Http.Abstractions package into your project
     public class GlobalErrorHandler
     {
         private readonly RequestDelegate _next;
-       
+        private readonly ILogger<GlobalErrorHandler> _logger;
 
-        public GlobalErrorHandler(RequestDelegate next)
+        public GlobalErrorHandler(RequestDelegate next, ILogger<GlobalErrorHandler> logger)
         {
             _next = next;
+            _logger = logger;
         }
 
         public async Task Invoke(HttpContext httpContext)
@@ -51,9 +52,10 @@ namespace eCommerce.ProductServices.Middlewares
                 }
                 else
                 {
-                    
+                    _logger.LogError(ex, "Unhandled exception on {Method} {Path}",
+                        httpContext.Request.Method, httpContext.Request.Path);
                     httpContext.Response.StatusCode = 500;
-                     await httpContext.Response.WriteAsync("An unexpected error occurred.");
+                    await httpContext.Response.WriteAsync($"An unexpected error occurred: {ex.Message}");
                 }
             }
         }

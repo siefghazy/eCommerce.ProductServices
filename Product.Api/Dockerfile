@@ -2,7 +2,15 @@
 
 # This stage is used when running from VS in fast mode (Default for Debug configuration)
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
-USER $APP_UID
+# Install gosu for safe privilege dropping in the entrypoint script.
+# Named Docker volumes mount as root:root, so we need to chown them at
+# runtime (as root) then drop to the app user before starting dotnet.
+RUN apt-get update && apt-get install -y --no-install-recommends gosu \
+    && rm -rf /var/lib/apt/lists/* \
+    && mkdir -p /home/app/.aspnet/DataProtection-Keys /app/wwwroot/ProductImages \
+    && chown -R $APP_UID /home/app/.aspnet /app/wwwroot
+# NOTE: We do NOT switch to APP_UID here — the entrypoint.sh does it after
+# fixing volume ownership at runtime.
 WORKDIR /app
 EXPOSE 8080
 EXPOSE 8081
@@ -30,4 +38,8 @@ RUN dotnet publish "./Product.Api.csproj" -c $BUILD_CONFIGURATION -o /app/publis
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "Product.Api.dll"]
+# Copy the entrypoint that fixes volume permissions then drops to APP_UID
+COPY Product.Api/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+ENV ENV="DOCKER"
+ENTRYPOINT ["/entrypoint.sh"]

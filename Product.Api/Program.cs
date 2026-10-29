@@ -2,6 +2,7 @@ using eCommerce.ProductServices.Middlewares;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -17,17 +18,16 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddCore();
 builder.Services.AddInfrastructure();
 builder.Services.AddControllers();
-var ConnectionStringTemp = builder.Configuration.GetConnectionString("DefaultConnection");
-var SqlHost = Environment.GetEnvironmentVariable("SQL_HOST");
-var password = Environment.GetEnvironmentVariable("PASSWORD");
 string ConnectionString = "";
-if (password == null)
+var ENV = Environment.GetEnvironmentVariable("ENV");
+if (ENV == null)
 {
-     ConnectionString = ConnectionStringTemp.Replace("$SQL_HOST", SqlHost);
+    ConnectionString = "server=WIN-JKQLDIQ02OA\\SQLEXPRESS;database=ProductService;trusted_connection=True;TrustServerCertificate=True;";
 }
 else
 {
-    var connectionString ="Server=sqlserver,1433;Database=Product_Services;User Id=sa;Password=YOUR_PASSWORD;TrustServerCertificate=True;";
+    ConnectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+        ?? "Server=sql-server,1433;Database=Product_Services;User Id=sa;Password=Your_Strong_Password123!;TrustServerCertificate=True;";
 }
 builder.Services.AddDbContext<ProductDbContext>(options =>
 {
@@ -100,6 +100,15 @@ builder.Services.AddStackExchangeRedisCache(options =>
     options.Configuration =
         builder.Configuration.GetConnectionString("Redis");
 });
+
+// Persist DataProtection keys to the mounted volume so they survive container restarts.
+// The path matches the volume mount in docker-compose.yaml.
+if (ENV != null)
+{
+    builder.Services.AddDataProtection()
+        .PersistKeysToFileSystem(new DirectoryInfo("/home/app/.aspnet/DataProtection-Keys"));
+}
+
 builder.Services.AddValidatorsFromAssemblyContaining<ProductDto>();
 builder.Services.AddFluentValidationAutoValidation();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -108,6 +117,14 @@ builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
 
+// Auto-apply EF migrations on startup (creates the DB if it doesn't exist).
+// Safe to run on every start — EF skips already-applied migrations.
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ProductDbContext>();
+    await db.Database.MigrateAsync();
+}
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -115,7 +132,11 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-app.UseHttpsRedirection();
+// In Docker, TLS is terminated upstream — skip HTTPS redirection inside the container.
+if (ENV == null)
+{
+    app.UseHttpsRedirection();
+}
 
 app.UseAuthorization();
 

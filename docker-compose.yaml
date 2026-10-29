@@ -1,0 +1,92 @@
+services:
+
+  # ──────────────────────────────────────────────
+  # Product API (.NET 8)
+  # ──────────────────────────────────────────────
+  product-api:
+    build:
+      context: .
+      dockerfile: Product.Api/Dockerfile
+    container_name: product-api
+    ports:
+      - "8080:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: "http://+:8080"
+      ENV: DOCKER
+      # SQL Server connection string (overrides appsettings.json)
+      ConnectionStrings__DefaultConnection: "Server=sql-server,1433;Database=Product_Services;User Id=sa;Password=Your_Strong_Password123!;TrustServerCertificate=True;"
+      # Redis connection string
+      ConnectionStrings__Redis: "product-redis:6379"
+      # JWT settings — use map style so special chars (!, $, #) are not misinterpreted
+      Jwt__Key: "Q9w!fS7x#L3nZ@8pV4rT1uM%kE6yD2bH9gF$$J0cR5sW"
+      Jwt__Issuer: UserServiceIssuer
+      Jwt__Audience: UserServiceAudience
+    volumes:
+      # Persist uploaded product images across restarts
+      - product_images:/app/wwwroot/ProductImages
+      # Persist DataProtection keys so auth cookies/tokens survive restarts
+      - dataprotection_keys:/home/app/.aspnet/DataProtection-Keys
+    depends_on:
+      sql-server:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - product-network
+
+  # ──────────────────────────────────────────────
+  # SQL Server 2022
+  # ──────────────────────────────────────────────
+  sql-server:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: sql-server
+    environment:
+      SA_PASSWORD: "Your_Strong_Password123!"
+      ACCEPT_EULA: "Y"
+      MSSQL_PID: Developer
+    ports:
+      - "1433:1433"
+    volumes:
+      - mssql_data:/var/opt/mssql
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P 'Your_Strong_Password123!' -Q 'SELECT 1' -No -C || exit 1"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - product-network
+
+  # ──────────────────────────────────────────────
+  # Redis 7 (Alpine)
+  # ──────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    container_name: product-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - product-network
+
+volumes:
+  mssql_data:
+  redis_data:
+  product_images:
+  dataprotection_keys:
+
+networks:
+  product-network:
+    driver: bridge
